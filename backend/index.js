@@ -32,15 +32,22 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-mongoose.connect(process.env.MONGODB_URI)
+mongoose.connect(process.env.MONGODB_URI, {
+  serverSelectionTimeoutMS: 15000,
+  socketTimeoutMS: 45000,
+  bufferCommands: false,
+  bufferMaxEntries: 0
+})
   .then(async () => {
     console.log('MongoDB connected');
-    try {
-      await autoSeedIfEmpty();
-      console.log('Database seeding completed');
-    } catch (error) {
-      console.error('Database seeding error:', error);
-    }
+    setTimeout(async () => {
+      try {
+        await autoSeedIfEmpty();
+        console.log('Database seeding completed');
+      } catch (error) {
+        console.error('Database seeding error:', error);
+      }
+    }, 2000);
   })
   .catch(err => console.error('MongoDB connection error:', err));
 
