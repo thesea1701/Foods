@@ -57,6 +57,13 @@ export default function CartPage() {
     }
   }, [router]);
 
+  useEffect(() => {
+    const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null;
+    if (user && user.role === 'admin') {
+      router.replace('/admin-orders');
+    }
+  }, [router]);
+
   const updateCart = (newCart: CartItem[]) => {
     setCartItems(newCart);
     localStorage.setItem('cart', JSON.stringify(newCart));
@@ -144,8 +151,9 @@ export default function CartPage() {
         localStorage.removeItem('currentRestaurant');
         setCartItems([]);
         window.dispatchEvent(new Event('storage'));
-        
-        router.push('/orders');
+        setTimeout(() => {
+          window.location.href = '/orders';
+        }, 100);
       }
     } catch (err) {
       setError('Không thể kết nối máy chủ!');

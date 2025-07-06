@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Container, Typography, List, ListItem, ListItemText, Paper, CircularProgress, Alert, Box, Chip, Button, Snackbar } from '@mui/material';
 import { useSocket } from '../../hooks/useSocket';
 import { useRouter } from 'next/navigation';
+import 'react-toastify/dist/ReactToastify.css';
 
 type Order = {
   _id: string;
@@ -35,54 +36,32 @@ export default function OrdersPage() {
   const { socket, isConnected, isAuthenticated, joinUserRoom } = useSocket();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMsg, setSnackbarMsg] = useState('');
+  const [shouldRefetch, setShouldRefetch] = useState(false);
+
+  const fetchOrders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) return;
+    fetch(`${API_URL}/api/orders/my`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('Không thể tải danh sách đơn hàng!');
+        }
+        return res.json();
+      })
+      .then(data => {
+        setOrders(data);
+        previousOrdersRef.current = data;
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message || 'Không thể tải danh sách đơn hàng!');
+        setLoading(false);
+      });
+  };
 
   useEffect(() => { setMounted(true); }, []);
-
-  useEffect(() => {
-    if (!socket || !isAuthenticated) return;
-
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const user = JSON.parse(userData);
-      joinUserRoom(user._id);
-    }
-
-    socket.on('order_status', (data: any) => {
-      console.log('Received order_status event:', data);
-      const userData = localStorage.getItem('user');
-      if (!userData) {
-        return;
-      }
-      const user = JSON.parse(userData);
-      if (data.customerId !== user._id) {
-        return;
-      }
-      const orderId = data.orderId || data._id;
-      const newStatus = data.status;
-      const statusText = data.statusText || getStatusText(newStatus);
-      setSnackbarMsg(`Đơn hàng đã được cập nhật trạng thái: ${statusText}`);
-      setSnackbarOpen(true);
-      setOrders(prev => {
-        const updated = prev.map(order => {
-          if (order._id === orderId) {
-            if (data._id) {
-              return data;
-            } else {
-              return { ...order, status: newStatus, updatedAt: data.updatedAt };
-            }
-          }
-          return order;
-        });
-        return updated;
-      });
-    });
-
-    return () => {
-      socket.off('order_status');
-    };
-  }, [socket, isConnected, isAuthenticated, joinUserRoom]);
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -98,34 +77,17 @@ export default function OrdersPage() {
       setLoading(false);
       return;
     }
-    
-    const fetchOrders = () => {
-      fetch(`${API_URL}/api/orders/my`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then(res => {
-          if (!res.ok) {
-            throw new Error('Không thể tải danh sách đơn hàng!');
-          }
-          return res.json();
-        })
-        .then(data => {
-          setOrders(data);
-          previousOrdersRef.current = data;
-          setLoading(false);
-        })
-        .catch((err) => {
-          setError(err.message || 'Không thể tải danh sách đơn hàng!');
-          setLoading(false);
-        });
-    };
-
     fetchOrders();
-    
     const interval = setInterval(fetchOrders, 30000);
-    
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (shouldRefetch) {
+      fetchOrders();
+      setShouldRefetch(false);
+    }
+  }, [shouldRefetch]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -213,13 +175,6 @@ export default function OrdersPage() {
           )}
         </List>
       </Paper>
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={4000}
-        onClose={() => setSnackbarOpen(false)}
-        message={snackbarMsg}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      />
     </Container>
   );
 } 

@@ -34,7 +34,11 @@ export default function LoginPage() {
         
         window.dispatchEvent(new Event('authStateChanged'));
         
-        router.push('/')
+        if (data.user.role === 'admin') {
+          window.location.href = '/admin-orders';
+        } else {
+          window.location.href = '/';
+        }
       }
     } catch {
       setError('Không thể kết nối máy chủ!');

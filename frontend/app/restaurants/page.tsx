@@ -20,6 +20,13 @@ export default function RestaurantsPage() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
+    const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null;
+    if (user && user.role === 'admin') {
+      router.replace('/admin-orders');
+    }
+  }, [router]);
+
+  useEffect(() => {
     fetch(`${API_URL}/api/restaurants`)
       .then(res => res.json())
       .then(data => {

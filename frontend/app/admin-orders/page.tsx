@@ -3,6 +3,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Container, Typography, List, ListItem, ListItemText, Paper, CircularProgress, Alert, Box, Chip, Button, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { useSocket } from '../../hooks/useSocket';
 import { useRouter } from 'next/navigation';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 type Order = {
   _id: string;
@@ -172,16 +174,18 @@ export default function AdminOrdersPage() {
 
       if (response.ok) {
         const updatedOrder = await response.json();
-        
-        setOrders(prev => 
-          prev.map(order => 
+        setOrders(prev =>
+          prev.map(order =>
             order._id === orderId ? updatedOrder : order
           )
         );
+        toast.success('Cập nhật trạng thái đơn hàng thành công!');
       } else {
+        toast.error('Cập nhật trạng thái đơn hàng thất bại!');
         console.error('Failed to update order status:', response.statusText);
       }
     } catch (error) {
+      toast.error('Có lỗi xảy ra khi cập nhật trạng thái!');
       console.error('Error updating order status:', error);
     }
   };
@@ -197,10 +201,10 @@ export default function AdminOrdersPage() {
   if (!mounted) return null;
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" mb={3}>Quản lý đơn hàng</Typography>
-      <Box sx={{ mb: 3 }}>
-        <FormControl sx={{ minWidth: 200 }}>
+    <Container maxWidth="lg" sx={{ py: 4, px: { xs: 0.5, sm: 2 } }}>
+      <Typography variant="h4" mb={3} sx={{ fontSize: { xs: 22, sm: 32 } }}>Quản lý đơn hàng</Typography>
+      <Box sx={{ mb: 3, px: { xs: 1, sm: 0 } }}>
+        <FormControl sx={{ minWidth: { xs: 120, sm: 200 } }} size="small">
           <InputLabel id="status-filter-label">Lọc theo trạng thái</InputLabel>
           <Select
             labelId="status-filter-label"
@@ -219,20 +223,19 @@ export default function AdminOrdersPage() {
 
       {loading && <CircularProgress />}
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      
-      <Paper elevation={2} sx={{ mt: 2 }}>
-        <List>
+      <Paper elevation={2} sx={{ mt: 2, overflowX: 'auto' }}>
+        <List sx={{ minWidth: 320 }}>
           {filteredOrders.length === 0 ? (
             <ListItem>
-              <ListItemText primary={statusFilter === 'all' ? "Chưa có đơn hàng nào" : `Không có đơn hàng nào ở trạng thái "${getStatusText(statusFilter)}"`} />
+              <ListItemText primary={statusFilter === 'all' ? "Chưa có đơn hàng nào" : `Không có đơn hàng nào ở trạng thái \"${getStatusText(statusFilter)}\"`} />
             </ListItem>
           ) : (
             filteredOrders.map(order => (
-              <ListItem key={order._id} divider>
+              <ListItem key={order._id} divider sx={{ flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, gap: 1 }}>
                 <ListItemText
                   primary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                      <Typography variant="h6" component="div">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', flexDirection: { xs: 'column', sm: 'row' } }}>
+                      <Typography variant="h6" component="div" sx={{ fontSize: { xs: 16, sm: 20 } }}>
                         {order.createdAt ? new Date(order.createdAt).toLocaleString('vi-VN') : ''}
                       </Typography>
                       <Chip 
@@ -240,43 +243,45 @@ export default function AdminOrdersPage() {
                         color={getStatusColor(order.status) as any}
                         size="small"
                         variant="filled"
+                        sx={{ fontSize: { xs: 12, sm: 14 } }}
                       />
                       {order.customer && (
                         <Chip 
                           label={`Khách: ${order.customer.name}`}
                           size="small"
                           variant="outlined"
+                          sx={{ fontSize: { xs: 12, sm: 14 } }}
                         />
                       )}
                     </Box>
                   }
                 />
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 1, flex: 1 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 1, flex: 1, width: '100%' }}>
                   {order.restaurant && (
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'bold' }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'bold', fontSize: { xs: 13, sm: 16 } }}>
                       Quán: {order.restaurant.name}
                     </Typography>
                   )}
                   {order.items && order.items.length > 0 && (
                     <Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'bold' }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'bold', fontSize: { xs: 13, sm: 16 } }}>
                         Món ăn:
                       </Typography>
                       {order.items.map((item, index) => (
-                        <Typography key={item.food._id + '-' + index} variant="body2" color="text.secondary" sx={{ ml: 2, mt: 0.5 }}>
+                        <Typography key={item.food._id + '-' + index} variant="body2" color="text.secondary" sx={{ ml: 2, mt: 0.5, fontSize: { xs: 12, sm: 14 } }}>
                           • {item.food.name} - {item.quantity} phần - {(item.price || 0).toLocaleString()}đ
                         </Typography>
                       ))}
                     </Box>
                   )}
                   {order.totalAmount && (
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'bold' }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'bold', fontSize: { xs: 13, sm: 16 } }}>
                       Tổng cộng: {(order.totalAmount || 0).toLocaleString()}đ
                     </Typography>
                   )}
                 </Box>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 200 }}>
-                  <FormControl size="small">
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'row', sm: 'column' }, gap: 1, minWidth: { xs: 0, sm: 200 }, width: { xs: '100%', sm: 'auto' }, mt: { xs: 1, sm: 0 } }}>
+                  <FormControl size="small" sx={{ minWidth: { xs: 100, sm: 120 } }}>
                     <InputLabel id={`order-status-${order._id}-label`}>Trạng thái</InputLabel>
                     <Select
                       labelId={`order-status-${order._id}-label`}
@@ -284,6 +289,7 @@ export default function AdminOrdersPage() {
                       value={order.status}
                       label="Trạng thái"
                       onChange={(e) => handleOrderStatusChange(order._id, e.target.value)}
+                      sx={{ fontSize: { xs: 12, sm: 14 } }}
                     >
                       <MenuItem value="pending">Chờ xác nhận</MenuItem>
                       <MenuItem value="confirmed">Đã xác nhận</MenuItem>
@@ -296,6 +302,7 @@ export default function AdminOrdersPage() {
           )}
         </List>
       </Paper>
+      <ToastContainer position="top-center" autoClose={4000} aria-label="toast-container" />
     </Container>
   );
 } 

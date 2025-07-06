@@ -3,6 +3,8 @@ import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Container, Typography, Card, CardContent, CardMedia, CircularProgress, Alert, Button, TextField, Box } from '@mui/material';
 import Grid from '@mui/material/Grid';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 type Food = {
   _id: string;
@@ -69,7 +71,12 @@ function FoodsContent() {
 
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     setIsLoggedIn(!!token);
-  }, [restaurantId, categoryId]);
+
+    const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null;
+    if (user && user.role === 'admin') {
+      router.replace('/admin-orders');
+    }
+  }, [restaurantId, categoryId, router]);
 
   const handleQuantityChange = (foodId: string, value: string) => {
     const numValue = parseInt(value) || 1;
@@ -110,7 +117,7 @@ function FoodsContent() {
     
     window.dispatchEvent(new Event('storage'));
     
-    alert(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
+    toast.success(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
   };
 
   return (
@@ -186,6 +193,7 @@ function FoodsContent() {
           </Grid>
         ))}
       </Grid>
+      <ToastContainer position="top-center" autoClose={3000} aria-label="toast-container" />
     </Container>
   );
 }
