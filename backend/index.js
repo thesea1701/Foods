@@ -33,7 +33,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('MongoDB connected'))
+  .then(async () => {
+    console.log('MongoDB connected');
+    try {
+      await autoSeedIfEmpty();
+      console.log('Database seeding completed');
+    } catch (error) {
+      console.error('Database seeding error:', error);
+    }
+  })
   .catch(err => console.error('MongoDB connection error:', err));
 
 app.get('/', (req, res) => {
@@ -127,28 +135,34 @@ io.on('connection', (socket) => {
 });
 
 async function autoSeedIfEmpty() {
-  const User = require('./models/User');
-  const Restaurant = require('./models/Restaurant');
-  const Category = require('./models/Category');
-  const Food = require('./models/Food');
-  const Order = require('./models/Order');
-  const Message = require('./models/Message');
-  const userCount = await User.countDocuments();
-  const resCount = await Restaurant.countDocuments();
-  const catCount = await Category.countDocuments();
-  const foodCount = await Food.countDocuments();
-  const orderCount = await Order.countDocuments();
-  const messageCount = await Message.countDocuments();
-  if (userCount === 0 || resCount === 0 || catCount === 0 || foodCount === 0 || orderCount === 0 || messageCount === 0) {
-    await seedUser();
-    await seedCategory();
-    await seedRestaurant();
-    await seedFood();
-    await seedOrder();
-    await seedMessage();
+  try {
+    const User = require('./models/User');
+    const Restaurant = require('./models/Restaurant');
+    const Category = require('./models/Category');
+    const Food = require('./models/Food');
+    const Order = require('./models/Order');
+    const Message = require('./models/Message');
+    const userCount = await User.countDocuments();
+    const resCount = await Restaurant.countDocuments();
+    const catCount = await Category.countDocuments();
+    const foodCount = await Food.countDocuments();
+    const orderCount = await Order.countDocuments();
+    const messageCount = await Message.countDocuments();
+    if (userCount === 0 || resCount === 0 || catCount === 0 || foodCount === 0 || orderCount === 0 || messageCount === 0) {
+      await seedUser();
+      await seedCategory();
+      await seedRestaurant();
+      await seedFood();
+      await seedOrder();
+      await seedMessage();
+    } else {
+      console.log('Database already contains data, skipping seeding');
+    }
+  } catch (error) {
+    console.error('Error during auto-seeding:', error);
+    throw error;
   }
 }
-autoSeedIfEmpty();
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
